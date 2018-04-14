@@ -10,34 +10,52 @@ const handlebars = require("express-handlebars").create({ defaultLayout: 'main' 
 const sequelize = new Sequelize("Music", "michael", null, {
   host: "localhost",
   dialect: "sqlite",
-  storage: "chinook.sqlite",
+  storage: "crudbook.sqlite",
   operatorsAliases: false
 });
-const Artist = sequelize.define(
-  "Artist",
-  {
-    ArtistId: {
-      type: Sequelize.INTEGER,
-      autoIncrement: true,
-      primaryKey: true
-    },
-    Name: Sequelize.STRING
-  },
-  {
-    freezeTableName: true,
-    timestamps: false
-  }
-);
-const Album = sequelize.define(
-"Album",
+// const Artist = sequelize.define(
+//   "Artist",
+//   {
+//     ArtistId: {
+//       type: Sequelize.INTEGER,
+//       autoIncrement: true,
+//       primaryKey: true
+//     },
+//     Name: Sequelize.STRING
+//   },
+//   {
+//     freezeTableName: true,
+//     timestamps: false
+//   }
+// );
+const User = sequelize.define(
+"User",
 {
-  AlbumId: {
+  ID: {
     type: Sequelize.INTEGER,
     autoIncrement: true,
     primaryKey: true
   },
-  ArtistId: Sequelize.INTEGER,
-  Title: Sequelize.STRING
+  firstName: Sequelize.STRING,
+  lastName: Sequelize.STRING,
+  username: Sequelize.STRING,
+},
+{
+  freezeTableName: true,
+  timestamps: false
+}
+);
+const Post = sequelize.define(
+"Post",
+{
+  ID: {
+    type: Sequelize.INTEGER,
+    autoIncrement: true,
+    primaryKey: true
+  },
+  authorID: Sequelize.INTEGER,
+  message: Sequelize.STRING,
+  timestamp: Sequelize.DATE,
 },
 {
   freezeTableName: true,
@@ -45,7 +63,7 @@ const Album = sequelize.define(
 }
 );
 //PITA JOIN CODE (Part One)
-Album.belongsTo(Artist, {foreignKey: 'ArtistId'});
+Post.belongsTo(User, {foreignKey: 'authorId'});
 
 app.engine('handlebars', handlebars.engine);
 app.set('view engine', 'handlebars');
@@ -56,16 +74,21 @@ app.get('/', (request, response) => {
 app.get('/about', (request, response) => {
     response.render('about');
 });
-app.get('/beginning', (request, response) => {
-    response.render('beginning');
-});
 app.use(express.static('views/images'));
+app.get('/users', (req, res) => {
+  User.findAll()
+    .then(users => {
+      res.render('users', {
+        user: users
+      });
+  });
+});
 //PITA JOIN CODE (Part Two)
-app.get('/album', (req, res) => {
-  Album.findAll({ include: [Artist]})
-    .then(albums => {
-      res.render('album', {
-        albums: albums
+app.get('/posts', (req, res) => {
+  Post.findAll({ include: [User]})
+    .then(posts => {
+      res.render('posts', {
+        post: posts
       });
   });
 });

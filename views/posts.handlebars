@@ -1,0 +1,20 @@
+<table>
+  <thead>
+    <tr>
+      <td><h3>Post Number</h3></td>
+      <td><h3>User</h3></td>
+      <td><h3>Post</h3></td>
+      <td><h3>Date</h3></td>
+    </tr>
+  </thead>
+  <tbody>
+    {{#each post}}
+      <tr>
+        <td>{{ this.ID }}</td>
+        <td>{{ this.User.username }}</td>
+        <td>{{ this.message }}</td>
+        <td>{{ this.timestamp }}</td>
+      </tr>
+    {{/each}}
+  </tbody>
+</table>
