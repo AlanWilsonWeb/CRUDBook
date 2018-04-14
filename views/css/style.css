@@ -1,0 +1,23 @@
+#postbody {
+  background-color: #e6e6e6;
+  padding: 5px;
+}
+.post{
+  background-color: #66b2ff;
+  padding: 10px;
+  margin: 10px;
+}
+.posthead{
+  background-color: #cce6ff;
+  padding: 2px;
+}
+.posttable{
+  table-layout: auto;
+  width: 100%;
+}
+.left{
+  text-align: left;
+}
+.right{
+  text-align: right;
+}
