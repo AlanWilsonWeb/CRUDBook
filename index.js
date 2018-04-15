@@ -1,7 +1,8 @@
 const http = require('http');
+const bCrypt = require('bcrypt-nodejs');
 const url = require('url');
 const passport = require('passport');
-const Strategy = require('passport-local').Strategy;
+const LocalStrategy = require('passport-local').Strategy;
 const bodyParser = require ('body-parser');
 const cookieParser = require('cookie-parser');
 const Sequelize = require("Sequelize");
@@ -55,43 +56,81 @@ const Post = sequelize.define(
 
 //PITA JOIN CODE (Part One)
 Post.belongsTo(User, {foreignKey: 'authorId'});
-
+app.use(passport.initialize());
 app.engine('handlebars', handlebars.engine);
 app.set('view engine', 'handlebars');
 app.set("port", process.env.PORT || 8080);
 app.use(express.static('views/images'));
 app.use(express.static('views/css'));
-app.use(bodyParser.urlencoded({ extended: false }))
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+app.use(require('connect-multiparty')());
 app.use(cookieParser());
+app.use(session({
+  secret: 'keyboard cat',
+  resave: false,
+  saveUninitialized: true,
+  cookie: {
+    httpOnly: true,
+    secure: false
+  }
+}));
+// passport.use(new LocalStrategy(
+//   function(username, password, done) {
+//     User.findOne({ username: username }, function (err, user) {
+//       if (err) { return done(err); }
+//       if (!user) { return done(null, false); }
+//       if (!user.verifyPassword(password)) { return done(null, false); }
+//       return done(null, user);
+//     });
+//   }
+// ));
+passport.serializeUser(function(user, done) {
+  done(null, user);
+});
 
-passport.use(new Strategy({
-    usernameField: 'username',
-    passwordField: 'password'
+passport.deserializeUser(function(user, done) {
+  done(null, user);
+});
+passport.use('local', new LocalStrategy({
+  usernameField: 'username',
+  passwordField: 'password',
+  passReqToCallback: true // allows us to pass back the entire request to the callback
   },
-  function(username, password, done) {
-    User.findOne({where: {username: username}}, function (err, user) {
-      if (err) { return done(err); }
-      if (!user) { return done(null, false); }
-      if (!user.verifyPassword(password)) { return done(null, false); }
-      return done(null, user);
+  function(req, username, password, done) {
+    var isValidPassword = function(userpass, password) {
+    return bCrypt.compareSync(password, bCrypt.hashSync(userpass));
+  }
+  User.findOne({
+  where: {
+  username: username
+  }
+  }).then(function(user) {
+    if (!user) {
+      return done(null, false, {
+      message: 'USERNAME does not exist'
+    });
+   }
+   if (!isValidPassword(user.password, password)) {
+      return done(null, false, {
+       message: 'Incorrect password.'
+      });
+   }
+   var userinfo = user.get();
+    return done(null, userinfo);
+   }).catch(function(err) {
+      console.log("Error:", err);
+      return done(null, false, {
+      message: 'Something went wrong with your Signin'
+      });
     });
   }
 ));
-
-passport.serializeUser(function(user, done) {
-  done(null, user.id);
+User.sequelize.sync().then(function() {
+    console.log('Database Check- OK!')
+  }).catch(function(err) {
+    console.log(err, "Something went wrong with the Database Update!")
 });
-
-passport.deserializeUser(function(id, done) {
-  User.find({where: {ID: id}}).success(function(user){
-    done(null, user);
-  }).error(function(err){
-    done(err, null);
-  });
-});
-
-app.use(passport.initialize());
-app.use(passport.session());
 
 app.get('/', (request, response) => {
     response.render('home');
@@ -99,13 +138,14 @@ app.get('/', (request, response) => {
 app.get('/login',(req, res) => {
     res.render('login');
   });
-  app.post('/login',
-    passport.authenticate('local', { failureRedirect: '/login' }),
-    function(req, res) {
-      res.redirect('/');
-    });
+app.post('/login',
+    passport.authenticate('local', {
+      successRedirect: '/profile',
+      failureRedirect: '/login',
+      })
+  );
 app.get('/profile', (request, response) => {
-    response.render('profile', { user: req.user });
+    response.render('profile');
 });
 app.get('/users', (req, res) => {
   User.findAll()
