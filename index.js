@@ -61,7 +61,7 @@ app.set('view engine', 'handlebars');
 app.set("port", process.env.PORT || 8080);
 app.use(express.static('views/images'));
 app.use(express.static('views/css'));
-app.use(bodyParser());
+app.use(bodyParser.urlencoded({ extended: false }))
 app.use(cookieParser());
 
 passport.use(new Strategy({
