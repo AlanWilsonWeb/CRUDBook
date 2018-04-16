@@ -1,1 +1,12 @@
-<h2>Welcome, {{this.username}}</h2>
+<h2>Welcome, {{user.username}}</h2>
+<h3><a href="/posts">All Posts</a></h3>
+<h3><a href="/myposts">My Posts</a></h3>
+New post:
+<form action="/myposts" method="post">
+  <label>Write Something! What's on your mind?</label>
+	<input type="text" name="message"/>
+	</div>
+	<div>
+	<input type="submit" value="Submit"/>
+	</div>
+</form>

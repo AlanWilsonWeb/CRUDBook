@@ -1,6 +1,7 @@
 const http = require('http');
 const bCrypt = require('bcrypt-nodejs');
 const url = require('url');
+const morgan = require('morgan');
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const bodyParser = require ('body-parser');
@@ -16,7 +17,7 @@ const sequelize = new Sequelize("Music", "michael", null, {
   storage: "crudbook.sqlite",
   operatorsAliases: false
 });
-
+var urlencodedParser = bodyParser.urlencoded({ extended: false });
 const User = sequelize.define(
 "User",
 {
@@ -56,7 +57,9 @@ const Post = sequelize.define(
 
 //PITA JOIN CODE (Part One)
 Post.belongsTo(User, {foreignKey: 'authorId'});
+app.use(morgan('dev'));
 app.use(passport.initialize());
+app.use(passport.session());
 app.engine('handlebars', handlebars.engine);
 app.set('view engine', 'handlebars');
 app.set("port", process.env.PORT || 8080);
@@ -70,28 +73,19 @@ app.use(session({
   secret: 'keyboard cat',
   resave: false,
   saveUninitialized: true,
-  cookie: {
-    httpOnly: true,
-    secure: false
-  }
-}));
-// passport.use(new LocalStrategy(
-//   function(username, password, done) {
-//     User.findOne({ username: username }, function (err, user) {
-//       if (err) { return done(err); }
-//       if (!user) { return done(null, false); }
-//       if (!user.verifyPassword(password)) { return done(null, false); }
-//       return done(null, user);
-//     });
-//   }
-// ));
+  }));
 passport.serializeUser(function(user, done) {
-  done(null, user);
+  done(null, {
+      ID: user["ID"],
+      username: user["username"]
+   }
+ );
+  console.log(user);
 });
 
-passport.deserializeUser(function(user, done) {
-  done(null, user);
-});
+// passport.deserializeUser(function(user, done) {
+//   done(null, user);
+// });
 passport.use('local', new LocalStrategy({
   usernameField: 'username',
   passwordField: 'password',
@@ -128,24 +122,40 @@ passport.use('local', new LocalStrategy({
 ));
 User.sequelize.sync().then(function() {
     console.log('Database Check- OK!')
-  }).catch(function(err) {
+      }).catch(function(err) {
     console.log(err, "Something went wrong with the Database Update!")
 });
 
 app.get('/', (request, response) => {
     response.render('home');
 });
+app.get('/success', (request, response) => {
+    response.render('success');
+});
 app.get('/login',(req, res) => {
     res.render('login');
   });
+app.get('/signup',(req, res) => {
+      res.render('signup');
+    });
+app.post('/signup', urlencodedParser, (req, res) =>{
+  User.create({
+    firstName: req.body.firstname,
+    lastName: req.body.lastname,
+    username: req.body.username,
+    password: req.body.password
+  })
+  res.render('signupsuccess');
+});
 app.post('/login',
     passport.authenticate('local', {
       successRedirect: '/profile',
       failureRedirect: '/login',
-      })
+    })
   );
-app.get('/profile', (request, response) => {
-    response.render('profile');
+app.get('/profile',
+  function(req, res){
+  res.render('profile', { user: req.session.passport.user });
 });
 app.get('/users', (req, res) => {
   User.findAll()
@@ -155,11 +165,31 @@ app.get('/users', (req, res) => {
       });
   });
 });
+
 //PITA JOIN CODE (Part Two)
 app.get('/posts', (req, res) => {
   Post.findAll({ include: [User]})
     .then(posts => {
       res.render('posts', {
+        post: posts
+      });
+  });
+});
+app.post('/myposts', urlencodedParser, (req, res) =>{
+  Post.create({
+    authorID: req.session.passport.user.ID,
+    message: req.body.message
+  })
+  res.render('success');
+});
+app.get('/myposts', (req, res) => {
+  Post.findAll({ include:[{
+        model: User,
+        where: { ID: req.session.passport.user.ID }
+    }]
+})
+    .then(posts => {
+      res.render('myposts', {
         post: posts
       });
   });

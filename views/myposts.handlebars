@@ -1,0 +1,17 @@
+<div id="top">
+</div>
+<div id="postbody">
+    {{#each post}}
+      <div class="post">
+        <div class="posthead">
+          <table class="posttable">
+            <tr>
+              <td class="left"><h3># {{ this.ID }} | {{ this.User.username }}</h3></td>
+              <td class="right"><h5>{{ this.timestamp }}</h5></td>
+            </tr>
+          </table>
+        </div>
+          <h3>{{ this.message }}</h3>
+      </div>
+    {{/each}}
+</div>
