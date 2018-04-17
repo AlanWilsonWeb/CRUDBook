@@ -194,7 +194,14 @@ app.get('/myposts', (req, res) => {
       });
   });
 });
-
+app.post('/killpost', (req, res) => {
+  Post.find({
+    where: { ID: req.body.postid }
+  }).then(post => {
+      post.destroy();
+      res.render('success');
+    });
+});
 app.listen(app.get("port"), () => {
   console.log(
     "Express started on http://localhost:" +

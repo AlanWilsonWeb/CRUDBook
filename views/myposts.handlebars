@@ -7,7 +7,14 @@
           <table class="posttable">
             <tr>
               <td class="left"><h3># {{ this.ID }} | {{ this.User.username }}</h3></td>
-              <td class="right"><h5>{{ this.timestamp }}</h5></td>
+              <td class="right"><h5>{{ this.timestamp }}</h5>
+                <form action="/killpost" method="post">
+                <div>
+                <input type="hidden" name="postid" value="{{ this.ID }}">
+                <input type="submit" value="DELETE"/>
+                </div>
+              </form>
+              </td>
             </tr>
           </table>
         </div>
